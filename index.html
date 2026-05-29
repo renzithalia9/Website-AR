@@ -9,6 +9,7 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
+        /* Mengunci layar HP agar pas dengan resolusi aslinya */
         html, body { 
             margin: 0; 
             padding: 0;
@@ -20,14 +21,17 @@
             background-color: #000;
         }
 
-        /* Memaksa elemen video kamera AR.js memenuhi layar penuh tanpa terpotong hitam */
-        .a-canvas {
-            width: 100% !important;
-            height: 100% !important;
+        /* SKRIP PEMAKSA FULLSCREEN: Menghilangkan layar hitam terbelah secara total */
+        video, canvas, .a-canvas {
+            width: 100vw !important;
+            height: 100vh !important;
             left: 0 !important;
             top: 0 !important;
+            object-fit: cover !important; /* Memotong ujung video agar pas memenuhi layar penuh HP */
+            position: absolute !important;
         }
         
+        /* Kotak Teks Informasi */
         #info-box {
             position: absolute;
             top: 15px;
@@ -47,6 +51,7 @@
             box-sizing: border-box;
         }
 
+        /* Container Menu Tombol */
         #menu-container {
             position: absolute;
             bottom: 30px;
@@ -114,13 +119,12 @@
             init: function () {
                 let el = this.el;
                 
-                // Mendukung event 'click' untuk desktop dan 'touchstart' khusus layar HP
-                const handleInteraction = function () {
+                el.addEventListener('click', function () {
                     let activeShape = document.querySelector('#marker-content').getAttribute('data-active');
                     let info = document.querySelector('#info-box');
 
                     if (!isOpen) {
-                        // ANIMASI MEMBUKA JARING-JARING
+                        // KETIKA DIKLIK: BANGUN RUANG 3D MEMBUKA JADI JARING-JARING
                         if (activeShape === 'kubus') {
                             document.querySelector('#k-depan').setAttribute('animation', 'property: rotation; to: 90 0 0; dur: 1000; easing: easeOutQuad');
                             document.querySelector('#k-belakang').setAttribute('animation', 'property: rotation; to: -90 0 0; dur: 1000; easing: easeOutQuad');
@@ -147,26 +151,20 @@
                         info.innerText = "Jaring-jaring terbuka! Ketuk objek untuk merapatkan kembali.";
                         isOpen = true;
                     } else {
-                        // ANIMASI MENUTUP KEMBALI JADI BANGUN RUANG UTUH
+                        // KETIKA DIKLIK LAGI: MERAPAT KEMBALI JADI BANGUN RUANG 3D UTUH
                         resetAnimations();
                         info.innerText = "Ketuk objek untuk melihat jaring-jaring " + activeShape + ".";
                         isOpen = false;
                     }
-                };
-
-                el.addEventListener('click', handleInteraction);
+                });
             }
         });
 
         function resetAnimations() {
             isOpen = false;
-            // Reset Kubus
             document.querySelectorAll('[id^="k-"]').forEach(el => el.removeAttribute('animation'));
-            
-            // Reset Limas
             document.querySelectorAll('[id^="l-"]').forEach(el => el.removeAttribute('animation'));
             
-            // Reset Tabung
             document.querySelector('#t-selimut').removeAttribute('animation');
             document.querySelector('#t-selimut').removeAttribute('animation__rot');
             document.querySelector('#t-selimut').setAttribute('position', '0 0.5 0');
@@ -174,7 +172,6 @@
             document.querySelector('#t-atas').removeAttribute('animation');
             document.querySelector('#t-atas').setAttribute('position', '0 1 0');
             
-            // Reset Kerucut
             document.querySelector('#kr-selimut').removeAttribute('animation');
             document.querySelector('#kr-selimut').setAttribute('position', '0 0 0');
             document.querySelector('#kr-alas').removeAttribute('animation');
@@ -192,13 +189,12 @@
             document.querySelector('#marker-content').setAttribute('data-active', shapeName);
             document.querySelector('#info-box').innerText = "Ketuk objek untuk melihat jaring-jaring " + shapeName + ".";
 
-            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('remove'));
             document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
         }
     </script>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;" 
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" 
              cursor="rayorigin: mouse; fuse: false;" raycaster="objects: .clickable">
         
         <a-marker preset="hiro">
