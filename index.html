@@ -1,270 +1,210 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
-    <title>Web-AR Jaring-Jaring Bangun Ruang</title>
-    
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    
-    <style>
-        /* Mengamankan elemen dasar agar AR.js bebas membuat canvas-nya sendiri */
-        html, body { 
-            margin: 0; 
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #000;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AR Marker Hiro Bangun Ruang</title>
 
-        /* PERBAIKAN UTAMA: Memaksa video bawaan AR.js yang disuntikkan ke body agar mutlak memenuhi layar */
-        body > video, 
-        body > .a-canvas,
-        .a-canvas {
-            width: 100% !important;
-            height: 100% !important;
-            left: 0 !important;
-            top: 0 !important;
-            object-fit: cover !important;
-            position: absolute !important;
-            z-index: 1 !important;
-        }
-        
-        /* Wadah Khusus UI agar mengapung stabil di atas komponen kamera tanpa merusak rasio */
-        .ui-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* Klik bisa menembus wadah ini menuju objek 3D */
-            z-index: 9999; /* Berada di lapisan teratas */
-        }
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
-        /* Box Teks Informasi di Atas */
-        #info-box {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85);
-            color: white;
-            padding: 12px 18px;
-            border-radius: 15px;
-            font-size: 13px;
-            text-align: center;
-            width: 85%;
-            max-width: 400px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            box-sizing: border-box;
-        }
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
 
-        /* Barisan Menu Tombol di Bawah */
-        #menu-container {
-            position: absolute;
-            bottom: 35px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.25);
-            padding: 8px;
-            border-radius: 30px;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            width: 90%;
-            max-width: 380px;
-            box-sizing: border-box;
-            pointer-events: auto; /* Tombol menu tetap wajib bisa diklik */
-        }
+    body {
+      overflow: hidden;
+      background: #000;
+    }
 
-        .menu-btn {
-            background: white;
-            color: #333;
-            border: none;
-            flex: 1;
-            padding: 12px 0;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 12px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 10;
+      padding: 15px;
+      color: white;
+      text-align: center;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+    }
 
-        .menu-btn.active {
-            background: #FF5722;
-            color: white;
-            transform: scale(1.05);
-        }
+    .overlay h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
 
-        @media screen and (max-width: 360px) {
-            .menu-btn { font-size: 11px; padding: 10px 0; }
-            #info-box { font-size: 11px; }
-        }
-    </style>
+    .overlay p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .info-box {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 350px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 15px;
+      border-radius: 20px;
+      z-index: 10;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .info-box h2 {
+      margin-bottom: 10px;
+      color: cyan;
+    }
+
+    .btn {
+      margin-top: 12px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 12px;
+      background: cyan;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+      background: white;
+    }
+
+    .jaring {
+      display: none;
+      margin-top: 15px;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      white-space: pre-line;
+      line-height: 1.8;
+      font-size: 18px;
+    }
+
+    .marker-box {
+      position: fixed;
+      right: 10px;
+      top: 90px;
+      width: 110px;
+      background: rgba(255,255,255,0.95);
+      padding: 8px;
+      border-radius: 12px;
+      z-index: 10;
+      text-align: center;
+    }
+
+    .marker {
+      width: 100%;
+      aspect-ratio: 1/1;
+      background: black;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 22px;
+    }
+
+    @media(max-width:600px){
+      .overlay h1{
+        font-size:20px;
+      }
+    }
+  </style>
 </head>
-
 <body>
 
-    <div class="ui-container">
-        <div id="info-box">Arahkan ke Marker HIRO, pilih bangun ruang, lalu ketuk objeknya!</div>
+  <div class="overlay">
+    <h1>AR Marker Hiro Bangun Ruang</h1>
+    <p>Arahkan kamera HP ke marker Hiro untuk menampilkan objek 3D</p>
+  </div>
 
-        <div id="menu-container">
-            <button class="menu-btn active" onclick="switchShape('kubus')">Kubus</button>
-            <button class="menu-btn" onclick="switchShape('limas')">Limas</button>
-            <button class="menu-btn" onclick="switchShape('tabung')">Tabung</button>
-            <button class="menu-btn" onclick="switchShape('kerucut')">Kerucut</button>
-        </div>
+  <div class="marker-box">
+    <div class="marker">HIRO</div>
+    <small>Marker Hiro</small>
+  </div>
+
+  <div class="info-box">
+    <h2>Kubus 3D</h2>
+    <p>Sentuh atau klik bangun ruang 3D untuk membuka jaring-jaring.</p>
+
+    <button class="btn">
+      Klik Bangun 3D
+    </button>
+
+    <div class="jaring" id="jaringBox">
+⬜ ⬜ ⬜
+    ⬜
+⬜ ⬜
     </div>
+  </div>
 
-    <script>
-        let isOpen = false;
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false;"
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true;"
+  >
 
-        AFRAME.registerComponent('shape-interaction', {
-            init: function () {
-                let el = this.el;
-                
-                el.addEventListener('click', function () {
-                    let activeShape = document.querySelector('#marker-content').getAttribute('data-active');
-                    let info = document.querySelector('#info-box');
+    <a-marker preset="hiro">
 
-                    if (!isOpen) {
-                        if (activeShape === 'kubus') {
-                            document.querySelector('#k-depan').setAttribute('animation', 'property: rotation; to: 90 0 0; dur: 1000; easing: easeOutQuad');
-                            document.querySelector('#k-belakang').setAttribute('animation', 'property: rotation; to: -90 0 0; dur: 1000; easing: easeOutQuad');
-                            document.querySelector('#k-kiri').setAttribute('animation', 'property: rotation; to: 0 0 90; dur: 1000; easing: easeOutQuad');
-                            document.querySelector('#k-kanan').setAttribute('animation', 'property: rotation; to: 0 0 -90; dur: 1000; easing: easeOutQuad');
-                            document.querySelector('#k-atas').setAttribute('animation', 'property: rotation; to: 90 0 0; dur: 1000; easing: easeOutQuad');
-                        } 
-                        else if (activeShape === 'limas') {
-                            document.querySelector('#l-depan').setAttribute('animation', 'property: rotation; to: 60 0 0; dur: 1000; easing: easeOutQuad');
-                            document.querySelector('#l-belakang').setAttribute('animation', 'property: rotation; to: -60 0 0; dur: 1000; easing: easeOutQuad');
-                            document.querySelector('#l-kiri').setAttribute('animation', 'property: rotation; to: 0 0 60; dur: 1000; easing: easeOutQuad');
-                            document.querySelector('#l-kanan').setAttribute('animation', 'property: rotation; to: 0 0 -60; dur: 1000; easing: easeOutQuad');
-                        }
-                        else if (activeShape === 'tabung') {
-                            document.querySelector('#t-selimut').setAttribute('animation', 'property: position; to: 0 0 1.2; dur: 1000; easing: easeOutQuad');
-                            document.querySelector('#t-selimut').setAttribute('animation__rot', 'property: rotation; to: -90 0 0; dur: 1000; easing: easeOutQuad');
-                            document.querySelector('#t-atas').setAttribute('animation', 'property: position; to: 0 1 0; dur: 1000; easing: easeOutQuad');
-                        }
-                        else if (activeShape === 'kerucut') {
-                            document.querySelector('#kr-selimut').setAttribute('animation', 'property: position; to: -0.6 0 0; dur: 1000; easing: easeOutQuad');
-                            document.querySelector('#kr-alas').setAttribute('animation', 'property: position; to: 0.6 -0.5 0; dur: 1000; easing: easeOutQuad');
-                        }
+      <!-- Kubus -->
+      <a-box
+        cursor-listener
+        id="kubus"
+        position="0 0.5 0"
+        rotation="0 45 0"
+        color="#00FFFF"
+        depth="1"
+        height="1"
+        width="1"
+        animation="property: rotation; to: 0 405 0; loop: true; dur: 6000"
+      ></a-box>
 
-                        info.innerText = "Jaring-jaring terbuka! Ketuk objek untuk merapatkan kembali.";
-                        isOpen = true;
-                    } else {
-                        resetAnimations();
-                        info.innerText = "Ketuk objek untuk melihat jaring-jaring " + activeShape + ".";
-                        isOpen = false;
-                    }
-                });
-            }
+      <!-- Text -->
+      <a-text
+        value="Kubus"
+        position="-0.5 1.3 0"
+        color="white"
+        scale="1.5 1.5 1.5"
+      ></a-text>
+
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    AFRAME.registerComponent('cursor-listener', {
+      init: function () {
+        this.el.addEventListener('click', function () {
+          toggleJaring();
         });
+      }
+    });
 
-        function resetAnimations() {
-            isOpen = false;
-            document.querySelectorAll('[id^="k-"]').forEach(el => el.removeAttribute('animation'));
-            document.querySelectorAll('[id^="l-"]').forEach(el => el.removeAttribute('animation'));
-            
-            document.querySelector('#t-selimut').removeAttribute('animation');
-            document.querySelector('#t-selimut').removeAttribute('animation__rot');
-            document.querySelector('#t-selimut').setAttribute('position', '0 0.5 0');
-            document.querySelector('#t-selimut').setAttribute('rotation', '0 0 0');
-            document.querySelector('#t-atas').removeAttribute('animation');
-            document.querySelector('#t-atas').setAttribute('position', '0 1 0');
-            
-            document.querySelector('#kr-selimut').removeAttribute('animation');
-            document.querySelector('#kr-selimut').setAttribute('position', '0 0 0');
-            document.querySelector('#kr-alas').removeAttribute('animation');
-            document.querySelector('#kr-alas').setAttribute('position', '0 -0.5 0');
-        }
+    function toggleJaring() {
+      const box = document.getElementById('jaringBox');
 
-        function switchShape(shapeName) {
-            resetAnimations();
-            
-            document.querySelector('#group-kubus').setAttribute('visible', shapeName === 'kubus');
-            document.querySelector('#group-limas').setAttribute('visible', shapeName === 'limas');
-            document.querySelector('#group-tabung').setAttribute('visible', shapeName === 'tabung');
-            document.querySelector('#group-kerucut').setAttribute('visible', shapeName === 'kerucut');
-            
-            document.querySelector('#marker-content').setAttribute('data-active', shapeName);
-            document.querySelector('#info-box').innerText = "Ketuk objek untuk melihat jaring-jaring " + shapeName + ".";
-
-            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-        }
-    </script>
-
-    <a-scene embedded arjs="sourceType: webcam; videoParameters: { facingMode: 'environment' }; debugUIEnabled: false;" 
-             cursor="rayorigin: mouse; fuse: false;" raycaster="objects: .clickable">
-        
-        <a-marker preset="hiro">
-            <a-entity id="marker-content" data-active="kubus" class="clickable" shape-interaction position="0 0 0" scale="0.6 0.6 0.6">
-                
-                <a-entity id="group-kubus" visible="true" position="0 0.2 0">
-                    <a-plane position="0 0 0" rotation="-90 0 0" width="1" height="1" color="#4CC3D9" material="side: double;"></a-plane>
-                    <a-entity id="k-depan" position="0 0 0.5">
-                        <a-plane position="0 0.5 0" rotation="0 0 0" width="1" height="1" color="#FFC65D" material="side: double;"></a-plane>
-                        <a-entity id="k-atas" position="0 1 0">
-                            <a-plane position="0 0.5 0" rotation="-90 0 0" width="1" height="1" color="#E74C3C" material="side: double;"></a-plane>
-                        </a-entity>
-                    </a-entity>
-                    <a-entity id="k-belakang" position="0 0 -0.5">
-                        <a-plane position="0 0.5 0" rotation="90 0 0" width="1" height="1" color="#16A085" material="side: double;"></a-plane>
-                    </a-entity>
-                    <a-entity id="k-kiri" position="-0.5 0 0">
-                        <a-plane position="0 0.5 0" rotation="0 90 -90" width="1" height="1" color="#9B59B6" material="side: double;"></a-plane>
-                    </a-entity>
-                    <a-entity id="k-kanan" position="0.5 0 0">
-                        <a-plane position="0 0.5 0" rotation="0 -90 90" width="1" height="1" color="#2ECC71" material="side: double;"></a-plane>
-                    </a-entity>
-                </a-entity>
-
-                <a-entity id="group-limas" visible="false" position="0 0 0">
-                    <a-plane position="0 0 0" rotation="-90 0 0" width="1" height="1" color="#34495E" material="side: double;"></a-plane>
-                    <a-entity id="l-depan" position="0 0 0.5">
-                        <a-triangle position="0 0.43 0" rotation="-30 0 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#E67E22" material="side: double;"></a-triangle>
-                    </a-entity>
-                    <a-entity id="l-belakang" position="0 0 -0.5">
-                        <a-triangle position="0 0.43 0" rotation="-30 180 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#9B59B6" material="side: double;"></a-triangle>
-                    </a-entity>
-                    <a-entity id="l-kiri" position="-0.5 0 0">
-                        <a-triangle position="0 0.43 0" rotation="-30 90 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#1ABC9C" material="side: double;"></a-triangle>
-                    </a-entity>
-                    <a-entity id="l-kanan" position="0.5 0 0">
-                        <a-triangle position="0 0.43 0" rotation="-30 -90 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#F1C40F" material="side: double;"></a-triangle>
-                    </a-entity>
-                </a-entity>
-
-                <a-entity id="group-tabung" visible="false" position="0 0 0">
-                    <a-circle position="0 0 0" rotation="-90 0 0" radius="0.5" color="#2980B9" material="side: double;"></a-circle>
-                    <a-entity id="t-atas" position="0 1 0">
-                        <a-circle position="0 0 0" rotation="-90 0 0" radius="0.5" color="#2980B9" material="side: double;"></a-circle>
-                    </a-entity>
-                    <a-cylinder id="t-selimut" position="0 0.5 0" radius="0.5" height="1" open-ended="true" color="#E74C3C" material="side: double;"></a-cylinder>
-                </a-entity>
-
-                <a-entity id="group-kerucut" visible="false" position="0 0.5 0">
-                    <a-entity id="kr-alas" position="0 -0.5 0">
-                        <a-circle rotation="-90 0 0" radius="0.5" color="#27AE60" material="side: double;"></a-circle>
-                    </a-entity>
-                    <a-cone id="kr-selimut" position="0 0 0" radius-bottom="0.5" radius-top="0" height="1" open-ended="true" color="#F39C12" material="side: double;"></a-cone>
-                </a-entity>
-
-            </a-entity>
-        </a-marker>
-
-        <a-entity camera></a-entity>
-    </a-scene>
+      if (box.style.display === 'block') {
+        box.style.display = 'none';
+      } else {
+        box.style.display = 'block';
+      }
+    }
+  </script>
 
 </body>
 </html>
