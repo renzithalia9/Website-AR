@@ -9,59 +9,68 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
-        /* Mengunci layar HP agar pas dengan resolusi aslinya */
+        /* Mengamankan elemen dasar agar AR.js bebas membuat canvas-nya sendiri */
         html, body { 
             margin: 0; 
             padding: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden; 
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            position: fixed;
+            overflow: hidden;
             background-color: #000;
         }
 
-        /* SKRIP PEMAKSA FULLSCREEN: Menghilangkan layar hitam terbelah secara total */
-        video, canvas, .a-canvas {
-            width: 100vw !important;
-            height: 100vh !important;
+        /* PERBAIKAN UTAMA: Memaksa video bawaan AR.js yang disuntikkan ke body agar mutlak memenuhi layar */
+        body > video, 
+        body > .a-canvas,
+        .a-canvas {
+            width: 100% !important;
+            height: 100% !important;
             left: 0 !important;
             top: 0 !important;
-            object-fit: cover !important; /* Memotong ujung video agar pas memenuhi layar penuh HP */
+            object-fit: cover !important;
             position: absolute !important;
+            z-index: 1 !important;
         }
         
-        /* Kotak Teks Informasi */
+        /* Wadah Khusus UI agar mengapung stabil di atas komponen kamera tanpa merusak rasio */
+        .ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Klik bisa menembus wadah ini menuju objek 3D */
+            z-index: 9999; /* Berada di lapisan teratas */
+        }
+
+        /* Box Teks Informasi di Atas */
         #info-box {
             position: absolute;
-            top: 15px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 9999;
             background: rgba(0, 0, 0, 0.85);
             color: white;
-            padding: 10px 15px;
+            padding: 12px 18px;
             border-radius: 15px;
             font-size: 13px;
             text-align: center;
             width: 85%;
             max-width: 400px;
-            pointer-events: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             box-sizing: border-box;
         }
 
-        /* Container Menu Tombol */
+        /* Barisan Menu Tombol di Bawah */
         #menu-container {
             position: absolute;
-            bottom: 30px;
+            bottom: 35px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             background: rgba(255, 255, 255, 0.25);
             padding: 8px;
             border-radius: 30px;
@@ -71,6 +80,7 @@
             width: 90%;
             max-width: 380px;
             box-sizing: border-box;
+            pointer-events: auto; /* Tombol menu tetap wajib bisa diklik */
         }
 
         .menu-btn {
@@ -103,13 +113,15 @@
 
 <body>
 
-    <div id="info-box">Arahkan ke Marker HIRO, pilih bangun ruang, lalu ketuk objeknya!</div>
+    <div class="ui-container">
+        <div id="info-box">Arahkan ke Marker HIRO, pilih bangun ruang, lalu ketuk objeknya!</div>
 
-    <div id="menu-container">
-        <button class="menu-btn active" onclick="switchShape('kubus')">Kubus</button>
-        <button class="menu-btn" onclick="switchShape('limas')">Limas</button>
-        <button class="menu-btn" onclick="switchShape('tabung')">Tabung</button>
-        <button class="menu-btn" onclick="switchShape('kerucut')">Kerucut</button>
+        <div id="menu-container">
+            <button class="menu-btn active" onclick="switchShape('kubus')">Kubus</button>
+            <button class="menu-btn" onclick="switchShape('limas')">Limas</button>
+            <button class="menu-btn" onclick="switchShape('tabung')">Tabung</button>
+            <button class="menu-btn" onclick="switchShape('kerucut')">Kerucut</button>
+        </div>
     </div>
 
     <script>
@@ -124,7 +136,6 @@
                     let info = document.querySelector('#info-box');
 
                     if (!isOpen) {
-                        // KETIKA DIKLIK: BANGUN RUANG 3D MEMBUKA JADI JARING-JARING
                         if (activeShape === 'kubus') {
                             document.querySelector('#k-depan').setAttribute('animation', 'property: rotation; to: 90 0 0; dur: 1000; easing: easeOutQuad');
                             document.querySelector('#k-belakang').setAttribute('animation', 'property: rotation; to: -90 0 0; dur: 1000; easing: easeOutQuad');
@@ -151,7 +162,6 @@
                         info.innerText = "Jaring-jaring terbuka! Ketuk objek untuk merapatkan kembali.";
                         isOpen = true;
                     } else {
-                        // KETIKA DIKLIK LAGI: MERAPAT KEMBALI JADI BANGUN RUANG 3D UTUH
                         resetAnimations();
                         info.innerText = "Ketuk objek untuk melihat jaring-jaring " + activeShape + ".";
                         isOpen = false;
@@ -194,23 +204,20 @@
         }
     </script>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" 
+    <a-scene embedded arjs="sourceType: webcam; videoParameters: { facingMode: 'environment' }; debugUIEnabled: false;" 
              cursor="rayorigin: mouse; fuse: false;" raycaster="objects: .clickable">
         
         <a-marker preset="hiro">
-            
             <a-entity id="marker-content" data-active="kubus" class="clickable" shape-interaction position="0 0 0" scale="0.6 0.6 0.6">
                 
                 <a-entity id="group-kubus" visible="true" position="0 0.2 0">
                     <a-plane position="0 0 0" rotation="-90 0 0" width="1" height="1" color="#4CC3D9" material="side: double;"></a-plane>
-                    
                     <a-entity id="k-depan" position="0 0 0.5">
                         <a-plane position="0 0.5 0" rotation="0 0 0" width="1" height="1" color="#FFC65D" material="side: double;"></a-plane>
                         <a-entity id="k-atas" position="0 1 0">
                             <a-plane position="0 0.5 0" rotation="-90 0 0" width="1" height="1" color="#E74C3C" material="side: double;"></a-plane>
                         </a-entity>
                     </a-entity>
-                    
                     <a-entity id="k-belakang" position="0 0 -0.5">
                         <a-plane position="0 0.5 0" rotation="90 0 0" width="1" height="1" color="#16A085" material="side: double;"></a-plane>
                     </a-entity>
@@ -224,7 +231,6 @@
 
                 <a-entity id="group-limas" visible="false" position="0 0 0">
                     <a-plane position="0 0 0" rotation="-90 0 0" width="1" height="1" color="#34495E" material="side: double;"></a-plane>
-                    
                     <a-entity id="l-depan" position="0 0 0.5">
                         <a-triangle position="0 0.43 0" rotation="-30 0 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#E67E22" material="side: double;"></a-triangle>
                     </a-entity>
