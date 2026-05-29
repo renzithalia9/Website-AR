@@ -1,463 +1,361 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>AR Bangun 3D</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js"></script>
-  <style>
-    :root {
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-left: env(safe-area-inset-left, 0px);
-      --safe-right: env(safe-area-inset-right, 0px);
-    }
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { width:100%; height:100%; overflow:hidden; background:#080812; font-family:'Segoe UI',system-ui,sans-serif; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Web-AR Jaring-Jaring Bangun Ruang</title>
+    
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+        }
 
-    /* ── HEADER ── */
-    #header {
-      position: fixed; top:0; left:0; right:0; z-index:900;
-      padding: calc(var(--safe-top) + 10px) 14px 10px;
-      background: rgba(8,8,20,0.88);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(120,80,255,0.25);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    #header h1 {
-      font-size: clamp(13px,3.5vw,16px); font-weight:800; letter-spacing:0.03em;
-      background: linear-gradient(135deg,#a78bfa,#38bdf8);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    }
-    #header .badge {
-      font-size:10px; padding:3px 9px; border-radius:20px;
-      background:rgba(120,80,255,0.18); color:#a78bfa;
-      border:1px solid rgba(120,80,255,0.35);
-    }
+        /* FIX LAYAR HITAM — jangan override canvas AR.js */
+        a-scene { display: block; }
 
-    /* ── SHAPE SELECTOR ── */
-    #shape-selector {
-      position: fixed; z-index:900;
-      top: calc(var(--safe-top) + 52px); left:0; right:0;
-      display: flex; gap:7px; padding:8px 12px;
-      overflow-x: auto; overflow-y: hidden;
-      background: rgba(8,8,20,0.82);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(80,80,120,0.18);
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-    #shape-selector::-webkit-scrollbar { display:none; }
+        #info-box {
+            position: fixed;
+            top: 15px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            background: rgba(0,0,0,0.78);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 15px;
+            font-size: 13px;
+            text-align: center;
+            width: 88%; max-width: 400px;
+            pointer-events: none;
+        }
 
-    .shape-btn {
-      flex-shrink:0;
-      min-width: 44px; height: 36px;
-      padding: 0 13px; border-radius: 18px;
-      font-size: clamp(11px,3vw,13px); font-weight:600;
-      cursor: pointer; border: 1.5px solid rgba(100,100,180,0.3);
-      background: rgba(30,30,60,0.55); color:#94a3b8;
-      transition: background 0.18s, color 0.18s, border-color 0.18s;
-      white-space: nowrap; touch-action: manipulation;
-    }
-    .shape-btn.active {
-      background: linear-gradient(135deg,#7c3aed,#2563eb);
-      color:#fff; border-color:transparent;
-      box-shadow: 0 0 14px rgba(124,58,237,0.45);
-    }
+        #menu-container {
+            position: fixed;
+            bottom: 24px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            gap: 6px;
+            background: rgba(255,255,255,0.22);
+            padding: 8px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            width: 92%; max-width: 380px;
+        }
 
-    /* ── INFO PANEL ── */
-    #info-panel {
-      position: fixed; bottom:0; left:0; right:0; z-index:900;
-      padding: 11px 14px calc(var(--safe-bottom) + 11px);
-      background: rgba(8,8,20,0.9);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-      border-top: 1px solid rgba(80,80,180,0.2);
-      display: flex; align-items: center; gap:10px;
-    }
-    .p-icon { font-size:20px; flex-shrink:0; }
-    .p-text { flex:1; min-width:0; }
-    .p-title { font-size:clamp(13px,3.5vw,15px); font-weight:700; color:#e2e8f0; }
-    .p-hint  { font-size:clamp(10px,2.5vw,11px); color:#475569; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    #net-btn {
-      flex-shrink:0; font-size:11px; padding:7px 13px; border-radius:14px;
-      background:rgba(16,185,129,0.13); color:#34d399;
-      border:1px solid rgba(16,185,129,0.28);
-      cursor:pointer; touch-action:manipulation; white-space:nowrap;
-      transition: background 0.15s;
-    }
-    #net-btn.showing { background:rgba(239,68,68,0.13); color:#f87171; border-color:rgba(239,68,68,0.28); }
+        .menu-btn {
+            flex: 1;
+            background: white;
+            color: #333;
+            border: none;
+            padding: 12px 0;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .menu-btn.active {
+            background: #FF5722;
+            color: white;
+        }
 
-    /* ── NET OVERLAY ── */
-    #net-overlay {
-      display:none; position:fixed; inset:0; z-index:1000;
-      background:#06060f;
-      flex-direction:column;
-    }
-    #net-overlay.show { display:flex; }
+        /* OVERLAY JARING — tampil di atas kamera */
+        #net-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            background: rgba(0,0,0,0.82);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #net-overlay.show { display: flex; }
 
-    #net-top {
-      flex-shrink:0;
-      padding: calc(var(--safe-top) + 10px) 14px 10px;
-      background:rgba(16,16,36,0.95);
-      border-bottom:1px solid rgba(80,80,180,0.2);
-      display:flex; align-items:center; justify-content:space-between;
-    }
-    #net-top h2 {
-      font-size:clamp(13px,3.5vw,15px); font-weight:700;
-      background:linear-gradient(135deg,#a78bfa,#38bdf8);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    }
-    #close-net {
-      padding:6px 14px; border-radius:18px; font-size:12px;
-      background:rgba(239,68,68,0.13); color:#f87171;
-      border:1px solid rgba(239,68,68,0.28); cursor:pointer;
-      touch-action:manipulation;
-    }
+        #net-overlay canvas {
+            border-radius: 14px;
+            background: #0d0d1f;
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 100%;
+            max-height: 55vh;
+        }
 
-    #net-canvas-wrap {
-      flex:1; display:flex; align-items:center; justify-content:center;
-      padding:10px; overflow:hidden;
-    }
-    #netCanvas {
-      border-radius:12px;
-      border:1px solid rgba(80,80,180,0.18);
-      background:#0b0b1a;
-      max-width:100%; max-height:100%;
-      display:block;
-    }
+        #net-info {
+            margin-top: 14px;
+            text-align: center;
+            color: #fff;
+        }
+        #net-info .name { font-size: 17px; font-weight: 700; margin-bottom: 5px; }
+        #net-info .desc { font-size: 12px; color: #94a3b8; line-height: 1.6; }
 
-    #net-desc-box {
-      flex-shrink:0;
-      padding:10px 14px calc(var(--safe-bottom) + 10px);
-      background:rgba(16,16,36,0.95);
-      border-top:1px solid rgba(80,80,180,0.18);
-    }
-    #net-shape-name { font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:3px; }
-    #net-shape-desc { font-size:11px; color:#64748b; line-height:1.5; }
-
-    /* ── LOADING ── */
-    #loading {
-      position:fixed; inset:0; z-index:2000;
-      background:#080812;
-      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
-      transition: opacity 0.4s;
-    }
-    #loading .logo {
-      font-size:clamp(28px,8vw,40px); font-weight:900; letter-spacing:-1px;
-      background:linear-gradient(135deg,#a78bfa,#38bdf8);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    }
-    #loading p { font-size:13px; color:#475569; }
-    .spin {
-      width:34px; height:34px; border-radius:50%;
-      border:3px solid rgba(124,58,237,0.18);
-      border-top:3px solid #7c3aed;
-      animation:spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform:rotate(360deg); } }
-
-    a-scene { position:fixed !important; top:0; left:0; width:100% !important; height:100% !important; }
-  </style>
+        #close-net {
+            margin-top: 16px;
+            padding: 10px 32px;
+            border-radius: 20px;
+            background: #FF5722;
+            color: #fff;
+            border: none;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
 </head>
 <body>
 
-<!-- Loading -->
-<div id="loading">
-  <div class="logo">AR 3D</div>
-  <div class="spin"></div>
-  <p>Menyiapkan kamera AR…</p>
+<div id="info-box">Arahkan ke Marker HIRO · Pilih bangun · Tap objek untuk jaring-jaring</div>
+
+<div id="menu-container">
+    <button class="menu-btn active" onclick="switchShape('kubus',this)">Kubus</button>
+    <button class="menu-btn" onclick="switchShape('limas',this)">Limas</button>
+    <button class="menu-btn" onclick="switchShape('tabung',this)">Tabung</button>
+    <button class="menu-btn" onclick="switchShape('kerucut',this)">Kerucut</button>
 </div>
 
-<!-- Header -->
-<div id="header">
-  <h1>⬡ AR Bangun 3D</h1>
-  <span class="badge">Hiro Marker</span>
-</div>
-
-<!-- Shape Selector -->
-<div id="shape-selector">
-  <button class="shape-btn active" data-shape="cube">Kubus</button>
-  <button class="shape-btn" data-shape="balok">Balok</button>
-  <button class="shape-btn" data-shape="pyramid">Limas Segi-4</button>
-  <button class="shape-btn" data-shape="prism">Prisma Segi-3</button>
-  <button class="shape-btn" data-shape="cylinder">Tabung</button>
-  <button class="shape-btn" data-shape="cone">Kerucut</button>
-</div>
-
-<!-- Info Panel -->
-<div id="info-panel">
-  <div class="p-icon" id="p-icon">🟦</div>
-  <div class="p-text">
-    <div class="p-title" id="p-title">Kubus</div>
-    <div class="p-hint" id="p-hint">Arahkan ke marker Hiro • Tap layar untuk jaring</div>
-  </div>
-  <div id="net-btn">Lihat Jaring</div>
-</div>
-
-<!-- Net Overlay -->
+<!-- OVERLAY JARING-JARING -->
 <div id="net-overlay">
-  <div id="net-top">
-    <h2 id="net-heading">Jaring-Jaring Kubus</h2>
-    <button id="close-net">✕ Tutup</button>
-  </div>
-  <div id="net-canvas-wrap">
-    <canvas id="netCanvas"></canvas>
-  </div>
-  <div id="net-desc-box">
-    <div id="net-shape-name">Kubus</div>
-    <div id="net-shape-desc"></div>
-  </div>
+    <canvas id="netCanvas" width="320" height="320"></canvas>
+    <div id="net-info">
+        <div class="name" id="net-name"></div>
+        <div class="desc" id="net-desc"></div>
+    </div>
+    <button id="close-net" onclick="hideNet()">✕ Tutup</button>
 </div>
 
-<!-- AR Scene -->
 <a-scene
-  embedded
-  arjs="sourceType:webcam; debugUIEnabled:false; detectionMode:mono_and_matrix; matrixCodeType:3x3;"
-  renderer="logarithmicDepthBuffer:true; antialias:true;"
-  vr-mode-ui="enabled:false"
-  id="arScene"
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    renderer="logarithmicDepthBuffer: true; antialias: true;"
+    vr-mode-ui="enabled: false"
+    loading-screen="enabled: false"
 >
-  <a-marker preset="hiro">
-    <a-entity id="shapeRoot"></a-entity>
-  </a-marker>
-  <a-entity camera></a-entity>
+    <a-marker preset="hiro">
+        <a-entity id="marker-content" data-active="kubus" scale="0.6 0.6 0.6">
+
+            <!-- KUBUS -->
+            <a-entity id="group-kubus" visible="true" position="0 0.2 0">
+                <a-plane position="0 0 0" rotation="-90 0 0" width="1" height="1" color="#4CC3D9" material="side:double"></a-plane>
+                <a-entity id="k-depan" position="0 0 0.5">
+                    <a-plane position="0 0.5 0" rotation="0 0 0" width="1" height="1" color="#FFC65D" material="side:double"></a-plane>
+                    <a-entity id="k-atas" position="0 1 0">
+                        <a-plane position="0 0.5 0" rotation="-90 0 0" width="1" height="1" color="#E74C3C" material="side:double"></a-plane>
+                    </a-entity>
+                </a-entity>
+                <a-entity id="k-belakang" position="0 0 -0.5">
+                    <a-plane position="0 0.5 0" rotation="90 0 0" width="1" height="1" color="#16A085" material="side:double"></a-plane>
+                </a-entity>
+                <a-entity id="k-kiri" position="-0.5 0 0">
+                    <a-plane position="0 0.5 0" rotation="0 90 -90" width="1" height="1" color="#9B59B6" material="side:double"></a-plane>
+                </a-entity>
+                <a-entity id="k-kanan" position="0.5 0 0">
+                    <a-plane position="0 0.5 0" rotation="0 -90 90" width="1" height="1" color="#2ECC71" material="side:double"></a-plane>
+                </a-entity>
+            </a-entity>
+
+            <!-- LIMAS -->
+            <a-entity id="group-limas" visible="false" position="0 0 0">
+                <a-plane position="0 0 0" rotation="-90 0 0" width="1" height="1" color="#34495E" material="side:double"></a-plane>
+                <a-entity id="l-depan" position="0 0 0.5">
+                    <a-triangle position="0 0.43 0" rotation="-30 0 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#E67E22" material="side:double"></a-triangle>
+                </a-entity>
+                <a-entity id="l-belakang" position="0 0 -0.5">
+                    <a-triangle position="0 0.43 0" rotation="-30 180 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#9B59B6" material="side:double"></a-triangle>
+                </a-entity>
+                <a-entity id="l-kiri" position="-0.5 0 0">
+                    <a-triangle position="0 0.43 0" rotation="-30 90 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#1ABC9C" material="side:double"></a-triangle>
+                </a-entity>
+                <a-entity id="l-kanan" position="0.5 0 0">
+                    <a-triangle position="0 0.43 0" rotation="-30 -90 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#F1C40F" material="side:double"></a-triangle>
+                </a-entity>
+            </a-entity>
+
+            <!-- TABUNG -->
+            <a-entity id="group-tabung" visible="false" position="0 0 0">
+                <a-circle position="0 0 0" rotation="-90 0 0" radius="0.5" color="#2980B9" material="side:double"></a-circle>
+                <a-entity id="t-atas" position="0 1 0">
+                    <a-circle position="0 0 0" rotation="-90 0 0" radius="0.5" color="#2980B9" material="side:double"></a-circle>
+                </a-entity>
+                <a-cylinder id="t-selimut" position="0 0.5 0" radius="0.5" height="1" open-ended="true" color="#E74C3C" material="side:double"></a-cylinder>
+            </a-entity>
+
+            <!-- KERUCUT -->
+            <a-entity id="group-kerucut" visible="false" position="0 0.5 0">
+                <a-entity id="kr-alas" position="0 -0.5 0">
+                    <a-circle rotation="-90 0 0" radius="0.5" color="#27AE60" material="side:double"></a-circle>
+                </a-entity>
+                <a-cone id="kr-selimut" position="0 0 0" radius-bottom="0.5" radius-top="0" height="1" open-ended="true" color="#F39C12" material="side:double"></a-cone>
+            </a-entity>
+
+        </a-entity>
+    </a-marker>
+    <a-entity camera></a-entity>
 </a-scene>
 
 <script>
-/* ─────────────── DATA SHAPES ─────────────── */
-const SHAPES = {
-  cube:{
-    label:'Kubus', icon:'🟦', hint:'Semua sisi sama panjang',
-    desc:'6 sisi persegi · 12 rusuk · 8 sudut. Luas = 6s² · Volume = s³',
-    build(r){
-      const b=el('a-box',{width:1,height:1,depth:1,color:'#7c3aed',opacity:.85,position:'0 .5 0',
-        animation:'property:rotation;to:0 360 0;loop:true;dur:4000;easing:linear'});
-      r.appendChild(b);
+/* ── DATA JARING ── */
+const DATA = {
+    kubus: {
+        name: 'Kubus',
+        desc: '6 sisi persegi · 12 rusuk · 8 sudut\nLuas = 6s² · Volume = s³',
+        draw(ctx, W, H) {
+            ctx.clearRect(0,0,W,H);
+            const s = Math.min(W,H) / 5.2, ox = W/2 - s*2, oy = 8;
+            const colors = ['#4CC3D9','#FFC65D','#E74C3C','#16A085','#9B59B6','#2ECC71'];
+            const layout = [[1,0],[0,1],[1,1],[2,1],[3,1],[1,2],[1,3]];
+            layout.forEach(([c,r], i) => {
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fillRect(ox+c*s, oy+r*s, s, s);
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+                ctx.strokeRect(ox+c*s, oy+r*s, s, s);
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 10px Segoe UI';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                if(i>0) ctx.fillText('ABCDEF'[i-1], ox+c*s+s/2, oy+r*s+s/2);
+            });
+        }
     },
-    net(ctx,W,H){
-      clear(ctx,W,H);
-      const s=Math.min(W,H)/5.5, ox=W/2-s*2, oy=12;
-      const fills=['#3b1d8a','#4c2aa0','#5e35b1','#7c3aed','#9d61f7','#b98afd'];
-      [[1,0],[0,1],[1,1],[2,1],[3,1],[1,2],[1,3]].forEach(([c,row],i)=>{
-        fRect(ctx,ox+c*s,oy+row*s,s,s,fills[i%fills.length],'#a78bfa');
-        if(i>0) txt(ctx,'ABCDEF'[i-1],ox+c*s+s/2,oy+row*s+s/2);
-      });
-      legend(ctx,W,H,'Kubus — 6 sisi persegi','s = '+Math.round(s)+'px');
-    }
-  },
-  balok:{
-    label:'Balok', icon:'🟫', hint:'Sisi persegi panjang',
-    desc:'6 sisi persegi panjang · 12 rusuk · 8 sudut. Luas = 2(pl+pt+lt) · Vol = p×l×t',
-    build(r){
-      const b=el('a-box',{width:1.5,height:.8,depth:1,color:'#d97706',opacity:.85,position:'0 .4 0',
-        animation:'property:rotation;to:0 360 0;loop:true;dur:4000;easing:linear'});
-      r.appendChild(b);
+    limas: {
+        name: 'Limas Segi-4',
+        desc: '1 alas persegi + 4 sisi segitiga · 8 rusuk · 5 sudut\nVolume = ⅓ × alas × tinggi',
+        draw(ctx, W, H) {
+            ctx.clearRect(0,0,W,H);
+            const s = Math.min(W,H)/4, h = s*1.0, cx = W/2, oy = 10;
+            // Alas
+            ctx.fillStyle='#34495E'; ctx.fillRect(cx-s/2, oy+h, s, s);
+            ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.strokeRect(cx-s/2, oy+h, s, s);
+            lbl(ctx,'Alas', cx, oy+h+s/2);
+            // 4 segitiga
+            const tris = [
+                {ax:cx,ay:oy, bx:cx-s/2,by:oy+h, cx:cx+s/2,cy:oy+h, c:'#E67E22', l:'Depan'},
+                {ax:cx,ay:oy+h+s+h, bx:cx-s/2,by:oy+h+s, cx:cx+s/2,cy:oy+h+s, c:'#9B59B6', l:'Belakang'},
+                {ax:cx-s/2-h*.6,ay:oy+h+s/2, bx:cx-s/2,by:oy+h, cx:cx-s/2,cy:oy+h+s, c:'#1ABC9C', l:'Kiri'},
+                {ax:cx+s/2+h*.6,ay:oy+h+s/2, bx:cx+s/2,by:oy+h, cx:cx+s/2,cy:oy+h+s, c:'#F1C40F', l:'Kanan'},
+            ];
+            tris.forEach(t => {
+                ctx.beginPath(); ctx.moveTo(t.ax,t.ay); ctx.lineTo(t.bx,t.by); ctx.lineTo(t.cx,t.cy); ctx.closePath();
+                ctx.fillStyle=t.c; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+                lbl(ctx, t.l, (t.ax+t.bx+t.cx)/3, (t.ay+t.by+t.cy)/3);
+            });
+        }
     },
-    net(ctx,W,H){
-      clear(ctx,W,H);
-      const u=Math.min(W,H)/7, p=u*2,l=u*1.3,t=u,ox=6,oy=10;
-      const fills=['#7c3200','#a34400','#c56000','#d97706','#e89b30','#f5c060'];
-      const rs=[[ox+l,oy,p,t],[ox,oy+t,l,p],[ox+l,oy+t,p,p],[ox+l+p,oy+t,l,p],[ox+l+p+l,oy+t,p,p],[ox+l,oy+t+p,p,t]];
-      rs.forEach(([x,y,w,h],i)=>{ fRect(ctx,x,y,w,h,fills[i],'#fbbf24'); txt(ctx,['Atas','Kiri','Depan','Kanan','Blkg','Bawah'][i],x+w/2,y+h/2); });
-      legend(ctx,W,H,'Balok — 6 sisi persegi panjang','p l t');
-    }
-  },
-  pyramid:{
-    label:'Limas Segi-4', icon:'🔺', hint:'Alas persegi + 4 segitiga',
-    desc:'1 alas persegi + 4 sisi segitiga · 8 rusuk · 5 sudut. Vol = ⅓×a×t',
-    build(r){
-      const c=el('a-cone',{'radius-bottom':.7,'radius-top':0,height:1.2,'segments-radial':4,
-        color:'#dc2626',opacity:.85,position:'0 .6 0',
-        animation:'property:rotation;to:0 360 0;loop:true;dur:4000;easing:linear'});
-      r.appendChild(c);
+    tabung: {
+        name: 'Tabung',
+        desc: '2 lingkaran + 1 selimut persegi panjang\nLuas = 2πr² + 2πrt · Volume = πr²t',
+        draw(ctx, W, H) {
+            ctx.clearRect(0,0,W,H);
+            const r = Math.min(W/6, 40), cw = Math.PI*2*r, ch = Math.min(H/3, 100), cx = W/2, oy = 12;
+            // Selimut
+            ctx.fillStyle='#E74C3C'; ctx.fillRect(cx-cw/2, oy+r*2+8, cw, ch);
+            ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.strokeRect(cx-cw/2, oy+r*2+8, cw, ch);
+            lbl(ctx,'Selimut (2πr × t)', cx, oy+r*2+8+ch/2);
+            // Lingkaran atas & bawah
+            [[cx, oy+r, 'Tutup'], [cx, oy+r*2+8+ch+r, 'Alas']].forEach(([x,y,lb]) => {
+                ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+                ctx.fillStyle='#2980B9'; ctx.fill();
+                ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+                lbl(ctx, lb, x, y);
+            });
+        }
     },
-    net(ctx,W,H){
-      clear(ctx,W,H);
-      const s=Math.min(W,H)/4.5, h=s*1.1, cx=W/2, oy=14;
-      fRect(ctx,cx-s/2,oy+h,s,s,'#7f1d1d','#f87171');
-      txt(ctx,'Alas',cx,oy+h+s/2);
-      [
-        {ax:cx,ay:oy,bx:cx-s/2,by:oy+h,cx2:cx+s/2,cy2:oy+h,lb:'Depan'},
-        {ax:cx,ay:oy+h+s+h,bx:cx-s/2,by:oy+h+s,cx2:cx+s/2,cy2:oy+h+s,lb:'Belakang'},
-        {ax:cx-s/2-h*.55,ay:oy+h+s/2,bx:cx-s/2,by:oy+h,cx2:cx-s/2,cy2:oy+h+s,lb:'Kiri'},
-        {ax:cx+s/2+h*.55,ay:oy+h+s/2,bx:cx+s/2,by:oy+h,cx2:cx+s/2,cy2:oy+h+s,lb:'Kanan'},
-      ].forEach(({ax,ay,bx,by,cx2,cy2,lb},i)=>{
-        fTri(ctx,ax,ay,bx,by,cx2,cy2,['#991b1b','#b91c1c','#c53030','#dc2626'][i],'#f87171');
-        txt(ctx,lb,(ax+bx+cx2)/3,(ay+by+cy2)/3);
-      });
-      legend(ctx,W,H,'Limas Segi-4 — 1 alas + 4 segitiga','');
+    kerucut: {
+        name: 'Kerucut',
+        desc: '1 alas lingkaran + 1 selimut juring\nLuas = πr² + πrs · Volume = ⅓πr²t',
+        draw(ctx, W, H) {
+            ctx.clearRect(0,0,W,H);
+            const cx=W/2, cy=H*0.38, r=Math.min(W/6,40), s=Math.min(W/2.2,115);
+            // Juring selimut
+            ctx.beginPath(); ctx.moveTo(cx,cy);
+            ctx.arc(cx,cy,s,-Math.PI*.82,Math.PI*.02); ctx.closePath();
+            ctx.fillStyle='#F39C12'; ctx.fill();
+            ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+            lbl(ctx,'Selimut (Juring)', cx-10, cy-36);
+            // Alas lingkaran
+            const ay = cy+s-r+Math.min(48, H*.12);
+            ctx.beginPath(); ctx.arc(cx, ay, r, 0, Math.PI*2);
+            ctx.fillStyle='#27AE60'; ctx.fill();
+            ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+            lbl(ctx,'Alas', cx, ay);
+        }
     }
-  },
-  prism:{
-    label:'Prisma Segi-3', icon:'🔷', hint:'Alas & tutup segitiga',
-    desc:'2 sisi segitiga + 3 sisi persegi panjang · 9 rusuk · 6 sudut. Vol = luas alas × t',
-    build(r){
-      const c=el('a-cylinder',{radius:.6,height:1,'segments-radial':3,
-        color:'#0891b2',opacity:.85,position:'0 .5 0',
-        animation:'property:rotation;to:0 360 0;loop:true;dur:4000;easing:linear'});
-      r.appendChild(c);
-    },
-    net(ctx,W,H){
-      clear(ctx,W,H);
-      const a=Math.min(W/4,70), h=Math.min(H/3.5,100), ox=8, oy=16;
-      const rY=oy+a*0.87;
-      [[ox,rY,a,h],[ox+a,rY,a,h],[ox+2*a,rY,a,h]].forEach(([x,y,w,hh],i)=>{
-        fRect(ctx,x,y,w,hh,['#0c4a6e','#075985','#0369a1'][i],'#38bdf8');
-        txt(ctx,['Sisi A','Sisi B','Sisi C'][i],x+w/2,y+hh/2);
-      });
-      const triT=[{x:ox+a/2,y:oy},{x:ox,y:rY},{x:ox+a,y:rY}];
-      const triB=[{x:ox+a/2,y:rY+h+a*.87},{x:ox,y:rY+h},{x:ox+a,y:rY+h}];
-      [triT,triB].forEach((pts,i)=>{
-        fTri(ctx,pts[0].x,pts[0].y,pts[1].x,pts[1].y,pts[2].x,pts[2].y,
-          i===0?'#0891b2':'#06b6d4','#38bdf8');
-        txt(ctx,i===0?'Atas':'Bawah',(pts[0].x+pts[1].x+pts[2].x)/3,(pts[0].y+pts[1].y+pts[2].y)/3);
-      });
-      legend(ctx,W,H,'Prisma Segi-3 — 2 segitiga + 3 persegi panjang','');
-    }
-  },
-  cylinder:{
-    label:'Tabung', icon:'🥫', hint:'Alas & tutup lingkaran',
-    desc:'2 lingkaran + 1 selimut persegi panjang. Luas = 2πr²+2πrt · Vol = πr²t',
-    build(r){
-      const c=el('a-cylinder',{radius:.5,height:1.2,color:'#059669',opacity:.85,position:'0 .6 0',
-        animation:'property:rotation;to:0 360 0;loop:true;dur:4000;easing:linear'});
-      r.appendChild(c);
-    },
-    net(ctx,W,H){
-      clear(ctx,W,H);
-      const r=Math.min(W/7,42), cw=Math.PI*2*r, ch=Math.min(H/3,110), cx=W/2, oy=14;
-      fRect(ctx,cx-cw/2,oy+r*2+8,cw,ch,'#064e3b','#34d399');
-      txt(ctx,'Selimut (2πr × t)',cx,oy+r*2+8+ch/2);
-      [[cx,oy+r,'Atas','#065f46'],[cx,oy+r*2+8+ch+r,'Bawah','#047857']].forEach(([x,y,lb,fill])=>{
-        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
-        ctx.fillStyle=fill; ctx.fill();
-        ctx.strokeStyle='#34d399'; ctx.lineWidth=2; ctx.stroke();
-        txt(ctx,lb,x,y);
-      });
-      legend(ctx,W,H,'Tabung — 2 lingkaran + 1 selimut','r='+Math.round(r));
-    }
-  },
-  cone:{
-    label:'Kerucut', icon:'🍦', hint:'Alas lingkaran + selimut juring',
-    desc:'1 alas lingkaran + 1 selimut juring. Luas = πr²+πrs · Vol = ⅓πr²t',
-    build(r){
-      const c=el('a-cone',{'radius-bottom':.6,'radius-top':0,height:1.4,
-        color:'#be185d',opacity:.85,position:'0 .7 0',
-        animation:'property:rotation;to:0 360 0;loop:true;dur:4000;easing:linear'});
-      r.appendChild(c);
-    },
-    net(ctx,W,H){
-      clear(ctx,W,H);
-      const cx=W/2, cy=H*0.38, r=Math.min(W/6,46), s=Math.min(W/2.2,120);
-      ctx.beginPath(); ctx.moveTo(cx,cy);
-      ctx.arc(cx,cy,s,-Math.PI*.82,Math.PI*.02); ctx.closePath();
-      ctx.fillStyle='#831843'; ctx.fill();
-      ctx.strokeStyle='#f9a8d4'; ctx.lineWidth=2; ctx.stroke();
-      txt(ctx,'Selimut (Juring)',cx-16,cy-38);
-      ctx.beginPath(); ctx.arc(cx,cy+s-r+Math.min(50,H*.12),r,0,Math.PI*2);
-      ctx.fillStyle='#9d174d'; ctx.fill();
-      ctx.strokeStyle='#f9a8d4'; ctx.lineWidth=2; ctx.stroke();
-      txt(ctx,'Alas',cx,cy+s-r+Math.min(50,H*.12));
-      legend(ctx,W,H,'Kerucut — 1 lingkaran + 1 juring','r='+Math.round(r)+' s='+Math.round(s));
-    }
-  }
 };
 
-/* ─────────────── HELPER ─────────────── */
-function el(tag,attrs){
-  const e=document.createElement(tag);
-  Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,String(v)));
-  return e;
-}
-function clear(ctx,W,H){ ctx.clearRect(0,0,W,H); }
-function fRect(ctx,x,y,w,h,fill,stroke){
-  ctx.fillStyle=fill; ctx.fillRect(x,y,w,h);
-  ctx.strokeStyle=stroke; ctx.lineWidth=1.8; ctx.strokeRect(x,y,w,h);
-}
-function fTri(ctx,ax,ay,bx,by,cx,cy,fill,stroke){
-  ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.lineTo(cx,cy); ctx.closePath();
-  ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=stroke; ctx.lineWidth=1.8; ctx.stroke();
-}
-function txt(ctx,t,x,y){
-  ctx.fillStyle='rgba(255,255,255,0.9)';
-  ctx.font='bold clamp(9px,2.5vw,11px) Segoe UI,system-ui,sans-serif';
-  ctx.font='bold 10px Segoe UI';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(t,x,y);
-}
-function legend(ctx,W,H,title,sub){
-  const y=H-26;
-  ctx.fillStyle='rgba(255,255,255,0.05)'; ctx.fillRect(6,y,W-12,22);
-  ctx.fillStyle='#64748b'; ctx.font='9px Segoe UI';
-  ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(title,12,y+11);
-  ctx.textAlign='right'; ctx.fillText(sub,W-10,y+11);
+function lbl(ctx, t, x, y) {
+    ctx.fillStyle='rgba(255,255,255,0.9)';
+    ctx.font='bold 10px Segoe UI,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(t, x, y);
 }
 
-/* ─────────────── STATE ─────────────── */
-let current='cube';
+/* ── STATE ── */
+let currentShape = 'kubus';
 
-function resizeCanvas(){
-  const wrap=document.getElementById('net-canvas-wrap');
-  const c=document.getElementById('netCanvas');
-  const W=Math.min(wrap.clientWidth-20, 380);
-  const H=Math.min(wrap.clientHeight-10, 440);
-  c.width=W; c.height=H;
-  if(document.getElementById('net-overlay').classList.contains('show')) drawNet();
+/* ── SWITCH SHAPE ── */
+function switchShape(name, btn) {
+    currentShape = name;
+    ['kubus','limas','tabung','kerucut'].forEach(s => {
+        const g = document.querySelector('#group-'+s);
+        if(g) g.setAttribute('visible', s===name);
+    });
+    document.querySelector('#marker-content').setAttribute('data-active', name);
+    document.querySelector('#info-box').innerText = 'Arahkan ke Marker HIRO · Tap objek untuk jaring-jaring ' + name;
+    document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    hideNet();
 }
 
-function setShape(key){
-  current=key;
-  const s=SHAPES[key];
-  document.querySelectorAll('.shape-btn').forEach(b=>b.classList.toggle('active',b.dataset.shape===key));
-  document.getElementById('p-icon').textContent=s.icon;
-  document.getElementById('p-title').textContent=s.label;
-  document.getElementById('p-hint').textContent=s.hint;
-  document.getElementById('net-heading').textContent='Jaring-Jaring '+s.label;
-  document.getElementById('net-shape-name').textContent=s.label;
-  document.getElementById('net-shape-desc').textContent=s.desc;
-  const root=document.getElementById('shapeRoot');
-  while(root.firstChild) root.removeChild(root.firstChild);
-  s.build(root);
+/* ── SHOW / HIDE NET ── */
+function showNet() {
+    const d = DATA[currentShape];
+    document.getElementById('net-name').textContent = d.name;
+    document.getElementById('net-desc').textContent = d.desc;
+
+    const canvas = document.getElementById('netCanvas');
+    const wrap = canvas.parentElement;
+    const W = Math.min(wrap.clientWidth - 40, 320);
+    const H = Math.min(window.innerHeight * 0.52, 340);
+    canvas.width = W; canvas.height = H;
+
+    d.draw(canvas.getContext('2d'), W, H);
+    document.getElementById('net-overlay').classList.add('show');
+    document.getElementById('info-box').innerText = 'Jaring-jaring ' + d.name + ' · Tap Tutup untuk kembali';
 }
 
-function drawNet(){
-  const c=document.getElementById('netCanvas');
-  SHAPES[current].net(c.getContext('2d'),c.width,c.height);
+function hideNet() {
+    document.getElementById('net-overlay').classList.remove('show');
+    document.getElementById('info-box').innerText = 'Arahkan ke Marker HIRO · Tap objek untuk jaring-jaring ' + currentShape;
 }
 
-function showNet(){
-  document.getElementById('net-overlay').classList.add('show');
-  document.getElementById('net-btn').textContent='Tutup Jaring';
-  document.getElementById('net-btn').classList.add('showing');
-  resizeCanvas(); drawNet();
-}
-function hideNet(){
-  document.getElementById('net-overlay').classList.remove('show');
-  document.getElementById('net-btn').textContent='Lihat Jaring';
-  document.getElementById('net-btn').classList.remove('showing');
+/* ── TAP HANDLER — works on HP & desktop ── */
+function setupTap() {
+    const scene = document.querySelector('a-scene');
+
+    // Desktop: klik biasa
+    scene.addEventListener('click', function(e) {
+        if(e.target.closest('#net-overlay') || e.target.closest('#menu-container')) return;
+        showNet();
+    });
+
+    // HP: touchend di area kamera (bukan UI)
+    document.addEventListener('touchend', function(e) {
+        const t = e.target;
+        if(t.closest('#net-overlay') || t.closest('#menu-container') || t.closest('#info-box')) return;
+        showNet();
+    }, {passive: true});
 }
 
-/* ─────────────── EVENTS ─────────────── */
-document.querySelectorAll('.shape-btn').forEach(b=>b.addEventListener('click',()=>setShape(b.dataset.shape)));
-document.getElementById('net-btn').addEventListener('click',()=>
-  document.getElementById('net-overlay').classList.contains('show')?hideNet():showNet());
-document.getElementById('close-net').addEventListener('click',hideNet);
-document.getElementById('arScene').addEventListener('click',showNet);
-window.addEventListener('resize',resizeCanvas);
-
-/* ─────────────── INIT ─────────────── */
-function hideLoading(){
-  const l=document.getElementById('loading');
-  l.style.opacity='0';
-  setTimeout(()=>l.style.display='none',450);
-  setShape('cube'); resizeCanvas();
-}
-document.querySelector('a-scene').addEventListener('loaded',()=>setTimeout(hideLoading,1200));
-setTimeout(()=>{ if(document.getElementById('loading').style.display!=='none') hideLoading(); },4500);
+document.querySelector('a-scene').addEventListener('loaded', setupTap);
+// fallback jika loaded sudah lewat
+setTimeout(setupTap, 3000);
 </script>
 </body>
 </html>
