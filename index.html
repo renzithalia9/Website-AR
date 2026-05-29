@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
     <title>Web-AR Jaring-Jaring Bangun Ruang</title>
     
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
-        /* Mengunci halaman agar pas dengan ukuran layar asli HP */
         html, body { 
             margin: 0; 
             padding: 0;
@@ -17,11 +16,18 @@
             height: 100%;
             overflow: hidden; 
             font-family: 'Segoe UI', Roboto, sans-serif;
-            position: fixed; /* Mencegah layar bergeser/tergulung */
+            position: fixed;
             background-color: #000;
         }
+
+        /* Memaksa elemen video kamera AR.js memenuhi layar penuh tanpa terpotong hitam */
+        .a-canvas {
+            width: 100% !important;
+            height: 100% !important;
+            left: 0 !important;
+            top: 0 !important;
+        }
         
-        /* Box Informasi di Atas - Dipaksa selalu muncul paling depan */
         #info-box {
             position: absolute;
             top: 15px;
@@ -41,7 +47,6 @@
             box-sizing: border-box;
         }
 
-        /* Container Menu Tombol di Bawah - Mengapung di atas video AR */
         #menu-container {
             position: absolute;
             bottom: 30px;
@@ -63,12 +68,11 @@
             box-sizing: border-box;
         }
 
-        /* Gaya Tombol Menu */
         .menu-btn {
             background: white;
             color: #333;
             border: none;
-            flex: 1; /* Membagi ukuran tombol sama rata ke samping */
+            flex: 1;
             padding: 12px 0;
             border-radius: 20px;
             font-weight: bold;
@@ -85,15 +89,9 @@
             transform: scale(1.05);
         }
 
-        /* Khusus HP Berlayar Sangat Kecil (Lebar di bawah 360px) */
         @media screen and (max-width: 360px) {
-            .menu-btn {
-                font-size: 11px;
-                padding: 10px 0;
-            }
-            #info-box {
-                font-size: 11px;
-            }
+            .menu-btn { font-size: 11px; padding: 10px 0; }
+            #info-box { font-size: 11px; }
         }
     </style>
 </head>
@@ -116,56 +114,59 @@
             init: function () {
                 let el = this.el;
                 
-                el.addEventListener('click', function () {
+                // Mendukung event 'click' untuk desktop dan 'touchstart' khusus layar HP
+                const handleInteraction = function () {
                     let activeShape = document.querySelector('#marker-content').getAttribute('data-active');
                     let info = document.querySelector('#info-box');
 
                     if (!isOpen) {
-                        // LOGIKA MEMBUKA JARING-JARING
+                        // ANIMASI MEMBUKA JARING-JARING
                         if (activeShape === 'kubus') {
-                            document.querySelector('#k-depan').setAttribute('animation', 'property: rotation; to: 90 0 0; dur: 1200; easing: easeOutQuad');
-                            document.querySelector('#k-belakang').setAttribute('animation', 'property: rotation; to: -90 0 0; dur: 1200; easing: easeOutQuad');
-                            document.querySelector('#k-kiri').setAttribute('animation', 'property: rotation; to: 0 0 90; dur: 1200; easing: easeOutQuad');
-                            document.querySelector('#k-kanan').setAttribute('animation', 'property: rotation; to: 0 0 -90; dur: 1200; easing: easeOutQuad');
-                            document.querySelector('#k-atas').setAttribute('animation', 'property: rotation; to: 90 0 0; dur: 1200; easing: easeOutQuad');
+                            document.querySelector('#k-depan').setAttribute('animation', 'property: rotation; to: 90 0 0; dur: 1000; easing: easeOutQuad');
+                            document.querySelector('#k-belakang').setAttribute('animation', 'property: rotation; to: -90 0 0; dur: 1000; easing: easeOutQuad');
+                            document.querySelector('#k-kiri').setAttribute('animation', 'property: rotation; to: 0 0 90; dur: 1000; easing: easeOutQuad');
+                            document.querySelector('#k-kanan').setAttribute('animation', 'property: rotation; to: 0 0 -90; dur: 1000; easing: easeOutQuad');
+                            document.querySelector('#k-atas').setAttribute('animation', 'property: rotation; to: 90 0 0; dur: 1000; easing: easeOutQuad');
                         } 
                         else if (activeShape === 'limas') {
-                            document.querySelector('#l-depan').setAttribute('animation', 'property: rotation; to: 60 0 0; dur: 1200; easing: easeOutQuad');
-                            document.querySelector('#l-belakang').setAttribute('animation', 'property: rotation; to: -60 0 0; dur: 1200; easing: easeOutQuad');
-                            document.querySelector('#l-kiri').setAttribute('animation', 'property: rotation; to: 0 0 60; dur: 1200; easing: easeOutQuad');
-                            document.querySelector('#l-kanan').setAttribute('animation', 'property: rotation; to: 0 0 -60; dur: 1200; easing: easeOutQuad');
+                            document.querySelector('#l-depan').setAttribute('animation', 'property: rotation; to: 60 0 0; dur: 1000; easing: easeOutQuad');
+                            document.querySelector('#l-belakang').setAttribute('animation', 'property: rotation; to: -60 0 0; dur: 1000; easing: easeOutQuad');
+                            document.querySelector('#l-kiri').setAttribute('animation', 'property: rotation; to: 0 0 60; dur: 1000; easing: easeOutQuad');
+                            document.querySelector('#l-kanan').setAttribute('animation', 'property: rotation; to: 0 0 -60; dur: 1000; easing: easeOutQuad');
                         }
                         else if (activeShape === 'tabung') {
-                            document.querySelector('#t-selimut').setAttribute('animation', 'property: position; to: 0 0 1.2; dur: 1200; easing: easeOutQuad');
-                            document.querySelector('#t-selimut').setAttribute('animation__rot', 'property: rotation; to: -90 0 0; dur: 1200; easing: easeOutQuad');
-                            document.querySelector('#t-atas').setAttribute('animation', 'property: position; to: 0 1 0; dur: 1200; easing: easeOutQuad');
+                            document.querySelector('#t-selimut').setAttribute('animation', 'property: position; to: 0 0 1.2; dur: 1000; easing: easeOutQuad');
+                            document.querySelector('#t-selimut').setAttribute('animation__rot', 'property: rotation; to: -90 0 0; dur: 1000; easing: easeOutQuad');
+                            document.querySelector('#t-atas').setAttribute('animation', 'property: position; to: 0 1 0; dur: 1000; easing: easeOutQuad');
                         }
                         else if (activeShape === 'kerucut') {
-                            document.querySelector('#kr-selimut').setAttribute('animation', 'property: position; to: -0.6 0 0; dur: 1200; easing: easeOutQuad');
-                            document.querySelector('#kr-alas').setAttribute('animation', 'property: position; to: 0.6 -0.5 0; dur: 1200; easing: easeOutQuad');
+                            document.querySelector('#kr-selimut').setAttribute('animation', 'property: position; to: -0.6 0 0; dur: 1000; easing: easeOutQuad');
+                            document.querySelector('#kr-alas').setAttribute('animation', 'property: position; to: 0.6 -0.5 0; dur: 1000; easing: easeOutQuad');
                         }
 
-                        info.innerText = "Jaring-jaring terbuka! Ketuk objek untuk melipat kembali.";
+                        info.innerText = "Jaring-jaring terbuka! Ketuk objek untuk merapatkan kembali.";
                         isOpen = true;
                     } else {
-                        // LOGIKA MENUTUP KEMBALI
+                        // ANIMASI MENUTUP KEMBALI JADI BANGUN RUANG UTUH
                         resetAnimations();
                         info.innerText = "Ketuk objek untuk melihat jaring-jaring " + activeShape + ".";
                         isOpen = false;
                     }
-                });
+                };
+
+                el.addEventListener('click', handleInteraction);
             }
         });
 
         function resetAnimations() {
             isOpen = false;
-            // Kembalikan Kubus
+            // Reset Kubus
             document.querySelectorAll('[id^="k-"]').forEach(el => el.removeAttribute('animation'));
             
-            // Kembalikan Limas
+            // Reset Limas
             document.querySelectorAll('[id^="l-"]').forEach(el => el.removeAttribute('animation'));
             
-            // Kembalikan Tabung
+            // Reset Tabung
             document.querySelector('#t-selimut').removeAttribute('animation');
             document.querySelector('#t-selimut').removeAttribute('animation__rot');
             document.querySelector('#t-selimut').setAttribute('position', '0 0.5 0');
@@ -173,7 +174,7 @@
             document.querySelector('#t-atas').removeAttribute('animation');
             document.querySelector('#t-atas').setAttribute('position', '0 1 0');
             
-            // Kembalikan Kerucut
+            // Reset Kerucut
             document.querySelector('#kr-selimut').removeAttribute('animation');
             document.querySelector('#kr-selimut').setAttribute('position', '0 0 0');
             document.querySelector('#kr-alas').removeAttribute('animation');
@@ -183,7 +184,6 @@
         function switchShape(shapeName) {
             resetAnimations();
             
-            // Kontrol Visibilitas Objek 3D
             document.querySelector('#group-kubus').setAttribute('visible', shapeName === 'kubus');
             document.querySelector('#group-limas').setAttribute('visible', shapeName === 'limas');
             document.querySelector('#group-tabung').setAttribute('visible', shapeName === 'tabung');
@@ -192,13 +192,14 @@
             document.querySelector('#marker-content').setAttribute('data-active', shapeName);
             document.querySelector('#info-box').innerText = "Ketuk objek untuk melihat jaring-jaring " + shapeName + ".";
 
-            // Mengatur Style Tombol Aktif
+            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('remove'));
             document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
         }
     </script>
 
-    <a-scene embedded arjs="sourceType: webcam; videoParameters: { facingMode: 'environment' }; debugUIEnabled: false;" cursor="rayorigin: mouse" raycaster="objects: .clickable">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;" 
+             cursor="rayorigin: mouse; fuse: false;" raycaster="objects: .clickable">
         
         <a-marker preset="hiro">
             
@@ -206,30 +207,33 @@
                 
                 <a-entity id="group-kubus" visible="true" position="0 0.2 0">
                     <a-plane position="0 0 0" rotation="-90 0 0" width="1" height="1" color="#4CC3D9" material="side: double;"></a-plane>
+                    
                     <a-entity id="k-depan" position="0 0 0.5">
-                        <a-plane position="0 0.5 0" width="1" height="1" color="#FFC65D" material="side: double;"></a-plane>
+                        <a-plane position="0 0.5 0" rotation="0 0 0" width="1" height="1" color="#FFC65D" material="side: double;"></a-plane>
                         <a-entity id="k-atas" position="0 1 0">
-                            <a-plane position="0 0.5 0" width="1" height="1" color="#E74C3C" material="side: double;"></a-plane>
+                            <a-plane position="0 0.5 0" rotation="-90 0 0" width="1" height="1" color="#E74C3C" material="side: double;"></a-plane>
                         </a-entity>
                     </a-entity>
+                    
                     <a-entity id="k-belakang" position="0 0 -0.5">
-                        <a-plane position="0 0.5 0" rotation="180 0 0" width="1" height="1" color="#16A085" material="side: double;"></a-plane>
+                        <a-plane position="0 0.5 0" rotation="90 0 0" width="1" height="1" color="#16A085" material="side: double;"></a-plane>
                     </a-entity>
                     <a-entity id="k-kiri" position="-0.5 0 0">
-                        <a-plane position="0 0.5 0" rotation="0 90 0" width="1" height="1" color="#9B59B6" material="side: double;"></a-plane>
+                        <a-plane position="0 0.5 0" rotation="0 90 -90" width="1" height="1" color="#9B59B6" material="side: double;"></a-plane>
                     </a-entity>
                     <a-entity id="k-kanan" position="0.5 0 0">
-                        <a-plane position="0 0.5 0" rotation="0 -90 0" width="1" height="1" color="#2ECC71" material="side: double;"></a-plane>
+                        <a-plane position="0 0.5 0" rotation="0 -90 90" width="1" height="1" color="#2ECC71" material="side: double;"></a-plane>
                     </a-entity>
                 </a-entity>
 
                 <a-entity id="group-limas" visible="false" position="0 0 0">
                     <a-plane position="0 0 0" rotation="-90 0 0" width="1" height="1" color="#34495E" material="side: double;"></a-plane>
+                    
                     <a-entity id="l-depan" position="0 0 0.5">
                         <a-triangle position="0 0.43 0" rotation="-30 0 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#E67E22" material="side: double;"></a-triangle>
                     </a-entity>
                     <a-entity id="l-belakang" position="0 0 -0.5">
-                        <a-triangle position="0 0.43 0" rotation="30 180 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#9B59B6" material="side: double;"></a-triangle>
+                        <a-triangle position="0 0.43 0" rotation="-30 180 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#9B59B6" material="side: double;"></a-triangle>
                     </a-entity>
                     <a-entity id="l-kiri" position="-0.5 0 0">
                         <a-triangle position="0 0.43 0" rotation="-30 90 0" vertex-a="0 0.5 0" vertex-b="-0.5 -0.5 0" vertex-c="0.5 -0.5 0" color="#1ABC9C" material="side: double;"></a-triangle>
@@ -255,7 +259,6 @@
                 </a-entity>
 
             </a-entity>
-            
         </a-marker>
 
         <a-entity camera></a-entity>
